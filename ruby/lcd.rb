@@ -45,8 +45,10 @@ class LCD
 
   def initialize(&block)
     self.setup
-    instance_eval &block
-    self.cleanup
+    if block_given?
+      instance_eval &block
+      self.cleanup
+    end
   rescue Exception => e
     self.cleanup
     raise e
@@ -74,7 +76,8 @@ class LCD
       GPIO.unexport pin
     end
   end
-  
+  alias_method :close, :cleanup  
+
   def command(command)
     command = COMMANDS[command] if command.is_a? Symbol
 

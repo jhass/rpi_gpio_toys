@@ -6,3 +6,7 @@ LCD.new do
   sleep 2
   puts "I'm fine, thanks!"
 end
+
+lcd = LCD.new
+lcd.puts "That's great to hear!"
+lcd.close
