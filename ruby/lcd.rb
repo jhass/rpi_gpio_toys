@@ -1,6 +1,6 @@
 require './gpio'
 
-module LCD
+class LCD
   ROWS = 19 # zero indexed 
   LINES = 1 # zero indexed
 
@@ -43,15 +43,16 @@ module LCD
     LCD_CDSHIFT_RL:	0x04
   }
 
-  def self.session(&block)
+  def initialize(&block)
     self.setup
-    block.call
+    instance_eval &block
     self.cleanup
-  rescue
+  rescue Exception => e
     self.cleanup
+    raise e
   end
 
-  def self.setup
+  def setup
     PINS.values.each do |pin|
       GPIO.output pin
       GPIO.write pin, :low
@@ -68,13 +69,13 @@ module LCD
     self.clear
   end
 
-  def self.cleanup
+  def cleanup
     PINS.values.each do |pin|
       GPIO.unexport pin
     end
   end
   
-  def self.command(command)
+  def command(command)
     command = COMMANDS[command] if command.is_a? Symbol
 
     GPIO.write PINS[:RS], :low
@@ -90,20 +91,20 @@ module LCD
     sleep 0.01
   end
 
-  def self.position(x, y)
+  def position(x, y)
     command = COMMANDS[:LCD_DGRAM]
     command = command | 0x40 if y == 1
     self.command command+x
-    @@current_line = y
-    @@current_row = x
+    @current_line = y
+    @current_row = x
   end
 
-  def self.puts(string)
+  def puts(string)
     self.next_line unless self.clear?
     string.unpack("C*").each do |char|
-      self.next_line if @@current_row > ROWS || char == 10 # 10 == \n
+      self.next_line if @current_row > ROWS || char == 10 # 10 == \n
       next if char == 10
-      @@clear = false
+      @clear = false
 
       GPIO.write PINS[:RS], :high
       GPIO.write PINS[:E], :high
@@ -116,26 +117,26 @@ module LCD
 
       GPIO.write PINS[:E], :low
 
-      @@current_row = @@current_row+1
+      @current_row = @current_row+1
     end
   end
 
-  def self.clear
+  def clear
     self.command :LCD_CLEAR
     self.position 0, 0
-    @@clear = true
+    @clear = true
   end
 
-  def self.next_line
-    @@current_line = @@current_line+1
-    if @@current_line > LINES
+  def next_line
+    @current_line = @current_line+1
+    if @current_line > LINES
       self.clear
     else
-      self.position 0, @@current_line
+      self.position 0, @current_line
     end
   end
 
-  def self.clear?
-    @@clear
+  def clear?
+    @clear
   end
 end

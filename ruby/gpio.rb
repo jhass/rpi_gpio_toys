@@ -1,4 +1,4 @@
-module GPIO
+class GPIO
   @@exported_pins = []
   def self.export(pin)
     return if @@exported_pins.include? pin
