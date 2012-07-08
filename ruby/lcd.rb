@@ -102,9 +102,21 @@ class LCD
     @current_row = x
   end
 
-  def puts(string)
+  def puts(input)
     self.next_line unless self.clear?
-    string.unpack("C*").each do |char|
+
+    string = ""
+    input.split("\n").each do |line|
+      i = 0
+      line.split(" ").each do |word|
+        i = i+word.size+1
+        string << ((i > ROWS) ? "\n#{word}" : "#{word} ")
+        i = 0 if i > ROWS
+      end
+      string.strip!
+      string << "\n"
+    end
+    string.strip.unpack("C*").each do |char|
       self.next_line if @current_row > ROWS || char == 10 # 10 == \n
       next if char == 10
       @clear = false
