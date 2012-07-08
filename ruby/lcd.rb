@@ -106,17 +106,27 @@ class LCD
     self.next_line unless self.clear?
 
     string = ""
-    input.split("\n").each do |line|
-      i = 0
-      line.split(" ").each do |word|
-        i = i+word.size+1
-        string << ((i > ROWS) ? "\n#{word}" : "#{word} ")
-        i = 0 if i > ROWS
+    input.each_line do |line|
+      if line.size > ROWS+1
+        i = 0
+        last_space = -1
+        line.each_char do |char|
+          last_space = string.size if char == " "
+          if i < ROWS+1
+            string << char
+            i = i+1
+          else
+            string << char
+            string[last_space] = "\n" unless last_space == -1
+            i = 0
+          end
+        end
+      else
+        string << line   
       end
-      string.strip!
-      string << "\n"
     end
-    string.strip.unpack("C*").each do |char|
+    string.rstrip!
+    string.unpack("C*").each do |char|
       self.next_line if @current_row > ROWS || char == 10 # 10 == \n
       next if char == 10
       @clear = false
