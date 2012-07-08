@@ -1,8 +1,8 @@
 require './gpio'
 
 module LCD
-  ROWS = 20 
-  LINES = 2
+  ROWS = 19 # zero indexed 
+  LINES = 1 # zero indexed
 
   PINS = {
     RS:	 0,
@@ -46,6 +46,8 @@ module LCD
   def self.session(&block)
     self.setup
     block.call
+    self.cleanup
+  rescue
     self.cleanup
   end
 
@@ -97,8 +99,11 @@ module LCD
   end
 
   def self.puts(string)
+    self.next_line unless self.clear?
     string.unpack("C*").each do |char|
-      self.next_line if @@current_row > ROWS      
+      self.next_line if @@current_row > ROWS || char == 10 # 10 == \n
+      next if char == 10
+      @@clear = false
 
       GPIO.write PINS[:RS], :high
       GPIO.write PINS[:E], :high
@@ -117,8 +122,8 @@ module LCD
 
   def self.clear
     self.command :LCD_CLEAR
-    @@current_line = 0
-    @@current_row = 0
+    self.position 0, 0
+    @@clear = true
   end
 
   def self.next_line
@@ -128,5 +133,9 @@ module LCD
     else
       self.position 0, @@current_line
     end
+  end
+
+  def self.clear?
+    @@clear
   end
 end
