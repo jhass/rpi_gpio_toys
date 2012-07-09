@@ -61,11 +61,14 @@ class LCD
     end
    
     3.times do
+      #       Set Functions         8-bit mode                Big font
       command COMMANDS[:LCD_FUNC] | COMMANDS[:LCD_FUNC_DL] | COMMANDS[:LCD_FUNC_N]
     end
-
-    command COMMANDS[:LCD_ON_OFF] | COMMANDS[:LCD_ON_OFF_D]
+    #        Display/Cursor           Display on                Show cursor
+    command COMMANDS[:LCD_ON_OFF] | COMMANDS[:LCD_ON_OFF_D] | COMMANDS[:LCD_ON_OFF_C]
+    #           Modus                Increment cursor
     command COMMANDS[:LCD_ENTRY] | COMMANDS[:LCD_ENTRY_ID]
+    #         Move cursor                Shift right
     command COMMANDS[:LCD_CDSHIFT] | COMMANDS[:LCD_CDSHIFT_RL]
     clear
   end
