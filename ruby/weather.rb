@@ -8,15 +8,19 @@ Barometer.config = { 1 => :wunderground }
 barometer = Barometer.new("Hannover, Germany")
 
 LCD.new do
-  first_time = true
+  wheater = barometer.measure
+  wheater.current.temperature.metric!
+
+  puts "Location: #{wheater.measurements.first.station.city}"
+
   loop do
     wheater = barometer.measure
     wheater.current.temperature.metric!
 
-    clear if first_time
-    puts "Location: #{wheater.measurements.first.station.city}" if first_time
-    clear_row unless first_time
-    hscroll "Temperature: #{wheater.current.temperature}  Condition: #{wheater.current.icon}", :speed => 20.8
-    first_time = false
+    condition = wheater.current.icon
+    condition.gsub!(/^t/, "thunder")
+    condition.gsub!("ly", "ly ")
+    condition.gsub!("chance", "chance of ")
+    hscroll "Temperature: #{wheater.current.temperature} - Condition: #{condition}", :speed => 20.6
   end
 end
