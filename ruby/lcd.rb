@@ -1,8 +1,8 @@
 require './gpio'
 
 class LCD
-  ROWS = 19 # zero indexed 
-  LINES = 1 # zero indexed
+  COLUMNS = 19 # zero indexed 
+  ROWS = 1 # zero indexed
 
   PINS = {
     RS:	 0,
@@ -54,6 +54,14 @@ class LCD
     raise e
   end
 
+  def columns
+    COLUMNS+1
+  end
+
+  def rows
+    ROWS+1
+  end
+
   def setup
     PINS.values.each do |pin|
       GPIO.output pin
@@ -98,21 +106,21 @@ class LCD
     command = COMMANDS[:LCD_DGRAM]
     command = command | 0x40 if y == 1
     self.command command+x
-    @current_line = y
-    @current_row = x
+    @current_row = y
+    @current_column = x
   end
 
   def puts(input)
-    self.next_line unless self.clear?
+    self.next_row unless self.clear?
 
     string = ""
     input.each_line do |line|
-      if line.size > ROWS+1
+      if line.size > COLUMNS+1
         i = 0
         last_space = -1
         line.each_char do |char|
           last_space = string.size if char == " "
-          if i < ROWS+1
+          if i < COLUMNS+1
             string << char
             i = i+1
           else
@@ -122,12 +130,12 @@ class LCD
           end
         end
       else
-        string << line   
+        string << line
       end
     end
     string.rstrip!
     string.unpack("C*").each do |char|
-      self.next_line if @current_row > ROWS || char == 10 # 10 == \n
+      self.next_row if @current_column > COLUMNS || char == 10 # 10 == \n
       next if char == 10
       @clear = false
 
@@ -142,7 +150,35 @@ class LCD
 
       GPIO.write PINS[:E], :low
 
-      @current_row = @current_row+1
+      @current_column = @current_column+1
+    end
+  end
+
+  def hscroll(string, opts={})
+    speed = opts.delete(:speed) || 21
+    times = opts.delete(:times) || 3
+    direction = opts.delete(:direction) || :ltr
+
+    speed = 100/(speed*5)
+
+    unless string.size > COLUMNS+1
+      self.puts string
+      sleep times*speed
+      return
+    end
+    
+    displayed_string = string
+    (times-1).times { displayed_string = "#{displayed_string} #{string}" }
+
+    start = (direction == :rtl) ? displayed_string.size-COLUMNS-1 : 0
+    stop = (direction == :rtl) ? displayed_string.size-1 : COLUMNS
+    increment = (direction == :rtl) ? -1 : 1
+    while (start >= 0 && direction == :rtl) || (stop < displayed_string.size && direction != :rtl) do
+      puts displayed_string[start..stop]
+      clear_row(true)
+      start = start+increment
+      stop = stop+increment
+      sleep speed
     end
   end
 
@@ -152,12 +188,23 @@ class LCD
     @clear = true
   end
 
-  def next_line
-    @current_line = @current_line+1
-    if @current_line > LINES
+  def clear_row(dirty=false)
+    current_row = @current_row
+    self.position 0, current_row
+    @clear = true
+    unless dirty
+      self.puts " "*(COLUMNS)
+      self.position 0, current_row
+      @clear = true
+    end
+  end
+
+  def next_row
+    @current_row = @current_row+1
+    if @current_row > ROWS
       self.clear
     else
-      self.position 0, @current_line
+      self.position 0, @current_row
     end
   end
 
