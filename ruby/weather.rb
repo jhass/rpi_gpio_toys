@@ -7,7 +7,7 @@ Barometer.config = { 1 => :wunderground }
 
 barometer = Barometer.new("Hannover, Germany")
 
-LCD.new do
+LCD.new(:mode => :'4bit') do
   wheater = barometer.measure
   wheater.current.temperature.metric!
 

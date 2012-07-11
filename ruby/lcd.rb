@@ -65,19 +65,17 @@ class LCD
 
     # Init
     GPIO.write PINS[:RS], :low
-    GPIO.write PINS[:E], :high
     GPIO.write PINS[:D4], :high
     GPIO.write PINS[:D5], :high
-    GPIO.write PINS[:E], :low
     
-    # Clock
-    GPIO.write PINS[:E], :high
-    GPIO.write PINS[:E], :low
-
-    # 4 bit mode?
-    GPIO.write PINS[:E], :high
+    # Send three times
+    3.times do 
+      clock
+    end
+    
+    #  4 bit mode?
     GPIO.write PINS[:D4], (@mode == :'8bit') ? :high : :low
-    GPIO.write PINS[:E], :low
+    clock
   
     #              Set Functions                  Big font
     func_command = COMMANDS[:LCD_FUNC] | COMMANDS[:LCD_FUNC_N]
@@ -89,6 +87,7 @@ class LCD
     command COMMANDS[:LCD_ENTRY] | COMMANDS[:LCD_ENTRY_ID]
     #         Move cursor                Shift right
     command COMMANDS[:LCD_CDSHIFT] | COMMANDS[:LCD_CDSHIFT_RL]
+    # Clear Display
     clear
   end
 
@@ -203,6 +202,11 @@ class LCD
   end
   
   private
+
+  def clock
+    GPIO.write PINS[:E], :high
+    GPIO.write PINS[:E], :low
+  end
   
   def write_byte(byte)
     data_lines = DATA_LINES
@@ -215,13 +219,12 @@ class LCD
     end
 
     bytes.each do |byte|
-      GPIO.write PINS[:E], :high
       data_lines.each do |pin|
         GPIO.write PINS[pin], byte & 1
         byte = byte >> 1
       end
-      
-      GPIO.write PINS[:E], :low
+
+      clock      
     end
   end
   
