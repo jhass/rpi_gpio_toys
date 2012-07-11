@@ -17,10 +17,10 @@ LCD.new do
     wheater = barometer.measure
     wheater.current.temperature.metric!
 
-    condition = wheater.current.icon
+    condition = wheater.current.icon.dup
     condition.gsub!(/^t/, "thunder")
     condition.gsub!("ly", "ly ")
     condition.gsub!("chance", "chance of ")
-    hscroll "Temperature: #{wheater.current.temperature} - Condition: #{condition}", :speed => 20.6
+    hscroll "Temperature: #{wheater.current.temperature} - Condition: #{condition} - At: #{wheater.current.current_at.to_t.strftime("%H:%m")} -", :speed => 20.6, :times => 1
   end
 end

@@ -17,7 +17,8 @@ class LCD
     D7:   4
   }
   
-  DATA_LINES = [:D0, :D1, :D2, :D3, :D4, :D5, :D6, :D7]
+  DATA_LINES = [ :D0, :D1, :D2, :D3, :D4, :D5, :D6, :D7 ]
+  UNUSED_IN_4BIT = [ :D0, :D1, :D2, :D3 ]
 
   COMMANDS = {
     LCD_CLEAR:      0x01,
@@ -43,7 +44,8 @@ class LCD
     LCD_CDSHIFT_RL: 0x04
   }
 
-  def initialize(&block)
+  def initialize(opts={}, &block)
+    @mode = opts.delete(:mode) || :'8bit'
     setup
     if block_given?
       instance_eval &block
@@ -56,14 +58,31 @@ class LCD
 
   def setup
     PINS.values.each do |pin|
+      next if @mode != :'8bit' && UNUSED_IN_4BIT.include?(pin)
       GPIO.output pin
       GPIO.write pin, :low
     end
-   
-    3.times do
-      #       Set Functions         8-bit mode                Big font
-      command COMMANDS[:LCD_FUNC] | COMMANDS[:LCD_FUNC_DL] | COMMANDS[:LCD_FUNC_N]
-    end
+
+    # Init
+    GPIO.write PINS[:RS], :low
+    GPIO.write PINS[:E], :high
+    GPIO.write PINS[:D4], :high
+    GPIO.write PINS[:D5], :high
+    GPIO.write PINS[:E], :low
+    
+    # Clock
+    GPIO.write PINS[:E], :high
+    GPIO.write PINS[:E], :low
+
+    # 4 bit mode?
+    GPIO.write PINS[:E], :high
+    GPIO.write PINS[:D4], (@mode == :'8bit') ? :high : :low
+    GPIO.write PINS[:E], :low
+  
+    #              Set Functions                  Big font
+    func_command = COMMANDS[:LCD_FUNC] | COMMANDS[:LCD_FUNC_N]
+    func_command = func_command | COMMANDS[:LCD_FUNC_DL] if @mode == :'8bit'
+    command func_command
     #        Display/Cursor           Display on                Show cursor
     command COMMANDS[:LCD_ON_OFF] | COMMANDS[:LCD_ON_OFF_D] | COMMANDS[:LCD_ON_OFF_C]
     #           Modus                Increment cursor
@@ -99,7 +118,7 @@ class LCD
     next_row unless clear?
 
     word_wrap(string).unpack("C*").each do |char|
-      next_row if @current_column > COLUMNS || char == 10 # 10 == \n
+      next_row if @current_column > COLUMNS || char == 10 # 10 == "\n"
       next if char == 10
       @clear = false
 
@@ -186,17 +205,28 @@ class LCD
   private
   
   def write_byte(byte)
-    GPIO.write PINS[:E], :high
-    
-    DATA_LINES.each do |pin|
-      GPIO.write PINS[pin], byte & 1
-      byte = byte >> 1
+    data_lines = DATA_LINES
+    data_lines -= UNUSED_IN_4BIT unless @mode == :'8bit'
+    if @mode == :'8bit'
+      bytes = [byte]
+    else
+      #         msn          lsn
+      bytes = [byte >> 4, byte & 0x0f]
     end
+
+    bytes.each do |byte|
+      GPIO.write PINS[:E], :high
+      data_lines.each do |pin|
+        GPIO.write PINS[pin], byte & 1
+        byte = byte >> 1
+      end
       
-    GPIO.write PINS[:E], :low
+      GPIO.write PINS[:E], :low
+    end
   end
   
   def word_wrap(input)
+    return input unless input.size > COLUMNS+1
     string = ""
     input.each_line do |line|
       if line.size > COLUMNS+1
@@ -218,6 +248,6 @@ class LCD
       end
     end
     
-    return string.rstrip
+    return string
   end
 end

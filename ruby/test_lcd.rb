@@ -10,7 +10,7 @@ LCD.new do
   puts " Is it working?"
 end
 
-lcd = LCD.new
+lcd = LCD.new(:mode => :'4bit')
 lcd.puts "That's great to hear!"
 sleep 4
 lcd.puts "01234567890123456789 01234567890123456789"
