@@ -67,6 +67,7 @@ class LCD
     GPIO.write PINS[:RS], :low
     GPIO.write PINS[:D4], :high
     GPIO.write PINS[:D5], :high
+
     
     # Send three times
     3.times do 
@@ -76,7 +77,6 @@ class LCD
     #  4 bit mode?
     GPIO.write PINS[:D4], (@mode == :'8bit') ? :high : :low
     clock
-  
     #              Set Functions                  Big font
     func_command = COMMANDS[:LCD_FUNC] | COMMANDS[:LCD_FUNC_N]
     func_command = func_command | COMMANDS[:LCD_FUNC_DL] if @mode == :'8bit'
@@ -223,8 +223,7 @@ class LCD
         GPIO.write PINS[pin], byte & 1
         byte = byte >> 1
       end
-
-      clock      
+      clock
     end
   end
   
