@@ -58,6 +58,20 @@ class Cube
     end
   end
 
+  def nested_each(first, second, third=nil, &block)
+    first.each do |f|
+      second.each do |s|
+        if third.nil?
+          yield s, f
+        else
+          third.each do |t|
+            yield t, s, f
+          end
+        end
+      end
+    end
+  end
+
   def x
     [:X1, :X2, :X3]
   end
@@ -74,8 +88,7 @@ class Cube
   alias_method :xy_area, :z
 
   def light_x_line(y, z, period=1)
-    blink_period = 0.0005
-    ((period/blink_period)/10).to_i.times do
+    pov_helper(period, 10) do |blink_period|
       x.each do |x|
         blink(x, y, z, blink_period)
       end
@@ -83,8 +96,7 @@ class Cube
   end
 
   def light_y_line(x, z, period=1)
-    blink_period = 0.0005
-    ((period/blink_period)/10).to_i.times do
+    pov_helper(period, 10) do |blink_period|
       y.each do |y|
         blink(x, y, z, blink_period)
       end
@@ -92,8 +104,7 @@ class Cube
   end
 
   def light_z_line(x, y, period=1)
-    blink_period = 0.0005
-    ((period/blink_period)/10).to_i.times do
+    pov_helper(period, 10) do |blink_period|
       z.each do |z|
         blink(x, y, z, blink_period)
       end
@@ -111,8 +122,7 @@ class Cube
   end
 
   def light_xz_area(y, period=1)
-    blink_period = 0.0005
-    ((period/blink_period)/30).to_i.times do
+    pov_helper(period) do |blink_period|
       each_in_xz_area(y) do |x, z|
         blink(x, y, z, blink_period)
       end
@@ -120,16 +130,11 @@ class Cube
   end
 
   def each_in_xz_area(y, &block)
-    z.each do |z|
-      x.each do |x|
-        yield x, z
-      end
-    end
+    nested_each(z, x, &block)
   end
 
   def light_yz_area(x, period=1)
-    blink_period = 0.0005
-    ((period/blink_period)/30).to_i.times do
+    pov_helper(period) do |blink_period|
       each_in_yz_area(x) do |y, z|
         blink(x, y, z, blink_period)
       end
@@ -137,16 +142,11 @@ class Cube
   end
 
   def each_in_yz_area(x, &block)
-    z.each do |z|
-      y.each do |y|
-        yield y, z
-      end
-    end
+    nested_each(z, y, &block)
   end
 
   def light_xy_area(z, period=1)
-    blink_period = 0.0005
-    ((period/blink_period)/30).to_i.times do
+    pov_helper(period) do |blink_period|
       each_in_xy_area(z) do |x, y|
         blink(x, y, z, blink_period)
       end
@@ -158,85 +158,31 @@ class Cube
   end
 
   def each_in_xy_area(z, &block)
-    y.each do |y|
-      x.each do |x|
-        yield x, y
-      end
-    end
+    nested_each(y, x, &block)
   end
 
   def each_in_sequence(&block)
-    z.each do |z|
-      y.each do |y|
-        x.each do |x|
-          yield x, y, z
-        end
-      end
-    end
+    nested_each(z, y, x, &block)
   end
 
   def test
     each_in_sequence do |x, y, z|
       puts "#{x}, #{y}, #{z}"
-      cube.light(x, y, z)
+      light(x, y, z)
       gets
-      cube.off(x, y, z)
+      off(x, y, z)
     end
+  end
+
+  private
+  
+  def pov_helper(period=1, cut_down_factor=30, blink_period = 0.0005, &block)
+    ((period/blink_period)/cut_down_factor).to_i.times { yield blink_period }
   end
 
   def write(x, y, z, value)
     [x, y, z].each do |pin|
       GPIO.write PINS[pin], value
     end
-  end
-
-end
-
-
-Cube.new do
-  loop do
-    3.times do 
-      [[:X1, :Y1],
-       [:X2, :Y1],
-       [:X3, :Y1],
-       [:X3, :Y2],
-       [:X3, :Y3],
-       [:X2, :Y3],
-       [:X1, :Y3],
-       [:X1, :Y2]].each do |x, y|
-        20.times do
-          light_z_line(:X2, :Y2, 0.005)
-          light_z_line(x, y, 0.005)
-        end
-      end
-    end
-
-    z.each do |z|
-      y.each do |y|
-        light_x_line(y, z, 0.3)
-      end
-    end
-
-    z.each do |z|
-      x.each do |x|
-        light_y_line(x, z, 0.3)
-      end
-    end
-
-    y.each do |y|
-      x.each do |x|
-        light_z_line(x, y, 0.3)
-      end
-    end
-
-    [xy_area, xz_area, yz_area].each do |area|
-      area.each do |level|
-        light_area(level, 0.2)
-      end
-      
-      area.reverse.each do |level|
-        light_area(level, 0.2)
-      end
-    end 
   end
 end
