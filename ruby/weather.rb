@@ -21,6 +21,7 @@ LCD.new(:mode => :'4bit') do
     condition.gsub!(/^t/, "thunder")
     condition.gsub!("ly", "ly ")
     condition.gsub!("chance", "chance of ")
-    hscroll "Temperature: #{wheater.current.temperature} - Condition: #{condition} - At: #{wheater.current.current_at.to_t.strftime("%H:%m")} -", :speed => 20.6, :times => 1
+    hscroll "Temperature: #{wheater.current.temperature} - Condition: #{condition} - At: #{wheater.current.current_at.to_t.strftime("%H:%m")} -",
+            :speed => 60, :times => 5
   end
 end

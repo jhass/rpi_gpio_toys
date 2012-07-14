@@ -77,6 +77,7 @@ class LCD
     #  4 bit mode?
     GPIO.write PINS[:D4], (@mode == :'8bit') ? :high : :low
     clock
+
     #              Set Functions                  Big font
     func_command = COMMANDS[:LCD_FUNC] | COMMANDS[:LCD_FUNC_N]
     func_command = func_command | COMMANDS[:LCD_FUNC_DL] if @mode == :'8bit'
@@ -122,6 +123,7 @@ class LCD
       @clear = false
 
       GPIO.write PINS[:RS], :high
+
       write_byte(char)
 
       @current_column += 1
@@ -129,11 +131,11 @@ class LCD
   end
 
   def hscroll(string, opts={})
-    speed = opts.delete(:speed) || 21
+    speed = opts.delete(:speed) || 22
     times = opts.delete(:times) || 3
     direction = opts.delete(:direction) || :ltr
 
-    speed = 100/(speed*5)
+    speed = 100.0/(speed*5)
 
     unless string.size > COLUMNS+1
       puts string
@@ -205,7 +207,9 @@ class LCD
 
   def clock
     GPIO.write PINS[:E], :high
+    sleep 0.001
     GPIO.write PINS[:E], :low
+    sleep 0.001
   end
   
   def write_byte(byte)
